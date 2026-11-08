@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2006-2026, Knut Reinert & Freie Universität Berlin
+# SPDX-FileCopyrightText: 2016-2026, Knut Reinert & MPI für molekulare Genetik
+# SPDX-License-Identifier: CC0-1.0
+
+# Lives on main of seqan/docs-preview (Settings → Pages → Source: GitHub Actions).
+# The `previews` branch holds only preview content, maintained by seqan/actions/docs_preview: one parentless
+# commit, <owner>/<repo>/<pr>/ per preview, no symlinks and no .git* entries.
+
+name: Pages
+
+on:
+  repository_dispatch:
+    types: [preview-updated]
+  workflow_dispatch:
+
+permissions: {}
+
+# The whole branch is deployed each time: let a running deployment finish, and keep only the newest pending one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout previews
+        uses: actions/checkout@v7 # locked via actions.lock
+        with:
+          ref: previews
+          persist-credentials: false
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5 # locked via actions.lock
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5 # locked via actions.lock
